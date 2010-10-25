@@ -20,19 +20,35 @@ def SAM_file_to_counts(filename):
     """
     Take a filename to a SAM file, and create a hash of mapped and
     unmapped reads; values are the counts of occurences.
+
+    Also, a hash of qualities (either 0 or otherwise) of mapped reads
+    is output.
     """
     counts = dict()
+    qual_counts = dict()
     sf = pysam.Samfile(filename, 'r')
     for read in sf:
         id_name = sf.getrname(read.rname) if read.rname != -1 else 0
+
+        ## quality recording
+        if not qual_counts.get(id_name, False):
+            # create empty list for hash
+            qual_counts[id_name] = {'0':0, '>0':0}
+
+        ## initiate entry; even if not mapped, record 0 count
+        counts[id_name] = counts.get(id_name, 0)
+        
         if not read.is_unmapped:
             counts[id_name] = counts.get(id_name, 0) + 1
-        elif read.is_unmapped:
-            # we want to record these as zeros
-            counts[id_name] = counts.get(id_name, 0)
-    return counts
 
-def collapsed_nested_count_dict(counts_dict, all_ids, order=None):
+            if read.mapq == 0:
+                qual_counts[id_name]['0'] = qual_counts[id_name]['0'] + 1
+            else:
+                qual_counts[id_name]['>0'] = qual_counts[id_name]['>0'] + 1
+
+    return {'counts':counts, 'qual_counts':qual_counts}
+
+def collapsed_nested_count_dict(counts_dict, all_ids):
     """
     This function takes a nested dictionary `counts_dict` and
     `all_ids`, which is built with the `table_dict`. All files (first
@@ -44,17 +60,16 @@ def collapsed_nested_count_dict(counts_dict, all_ids, order=None):
     be created on the first row from the ordered columns (extracted
     from filenames).
     """
-    if order is None:
-        col_order = total_counts.keys()
+    col_order = counts_dict.keys()
 
     collapsed_dict = dict()
-    for i, filename in enumerate(total_counts.keys()):
+    for i, filename in enumerate(counts_dict.keys()):
         for id_name in all_ids:
             if not collapsed_dict.get(id_name, False):
                 collapsed_dict[id_name] = list()
 
             # get counts and append
-            c = total_counts[filename].get(id_name, 0)
+            c = counts_dict[filename].get(id_name, 0)
             collapsed_dict[id_name].append(c)
     return {'table':collapsed_dict, 'header':col_order}
 
@@ -86,7 +101,12 @@ if __name__ == '__main__':
     parser = OptionParser()
     parser.add_option("-d", "--delimiter", dest="delimiter",
                       help="the delimiter (default: tab)", default='\t')
-
+    parser.add_option("-o", "--out-file", dest="out_file",
+                      help="the output file's name (default: counts.txt)",
+                      default='counts.txt')
+    parser.add_option("-q", "--include-quality", dest="quality",
+                      help="generate quality statistics too (default: False)",
+                      default=False)
     parser.add_option("-v", "--verbose", dest="verbose",
                       help="enable verbose output")
 
@@ -95,15 +115,24 @@ if __name__ == '__main__':
     if len(args) < 1:
         parser.error("one or more SAM files as arguments required")
 
-    total_counts = dict()
+    file_counts = dict()
+    file_qual_counts = dict()
     all_ids = list()
     for filename in args:
-        total_counts[filename] = SAM_file_to_counts(filename)
-        all_ids.extend(total_counts[filename].keys())
+        ## read in SAM file, extract counts, and unpack counts and qual_counts
+        tmp = SAM_file_to_counts(filename)
+        counts, qual_counts = tmp['counts'], tmp['qual_counts']
 
+        ## save counts, qual_counts, and all ids encountered
+        file_counts[filename] = counts
+        file_qual_counts[filename] = qual_counts
+        all_ids.extend(file_counts[filename].keys())
+
+    ## Uniquify all_ids, and then take the nested file_counts
+    ## dictionary, collapse, and write to file.
     all_ids = set(all_ids)
-    table_dict = collapsed_nested_count_dict(total_counts, all_ids)
-    counts_to_file(table_dict, 'test.csv', delimiter=options.delimiter)
+    table_dict = collapsed_nested_count_dict(file_counts, all_ids)
+    counts_to_file(table_dict, options.out_file, delimiter=options.delimiter)
         
         
     
