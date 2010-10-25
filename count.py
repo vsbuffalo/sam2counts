@@ -9,6 +9,7 @@ Email: vsbuffaloAAAAA@gmail.com (with poly-A tail removed)
 
 import sys
 import csv
+from os import path
 try:
     import pysam
 except ImportError:
@@ -48,7 +49,7 @@ def SAM_file_to_counts(filename):
 
     return {'counts':counts, 'qual_counts':qual_counts}
 
-def collapsed_nested_count_dict(counts_dict, all_ids):
+def collapsed_nested_count_dict(counts_dict, all_ids, order=None):
     """
     This function takes a nested dictionary `counts_dict` and
     `all_ids`, which is built with the `table_dict`. All files (first
@@ -60,10 +61,13 @@ def collapsed_nested_count_dict(counts_dict, all_ids):
     be created on the first row from the ordered columns (extracted
     from filenames).
     """
-    col_order = counts_dict.keys()
+    if order is None:
+        col_order = counts_dict.keys()
+    else:
+        col_order = order
 
     collapsed_dict = dict()
-    for i, filename in enumerate(counts_dict.keys()):
+    for i, filename in enumerate(col_order):
         for id_name in all_ids:
             if not collapsed_dict.get(id_name, False):
                 collapsed_dict[id_name] = list()
@@ -118,9 +122,14 @@ if __name__ == '__main__':
     file_counts = dict()
     file_qual_counts = dict()
     all_ids = list()
-    for filename in args:
+    files = [path.basename(f) for f in args]
+
+    if len(set(files)) != len(set(args)):
+        parser.error("file args must have unique base names (i.e. no foo/bar joo/bar)")
+    for full_filename in args:
+        filename = path.basename(full_filename)
         ## read in SAM file, extract counts, and unpack counts and qual_counts
-        tmp = SAM_file_to_counts(filename)
+        tmp = SAM_file_to_counts(full_filename)
         counts, qual_counts = tmp['counts'], tmp['qual_counts']
 
         ## save counts, qual_counts, and all ids encountered
@@ -131,7 +140,7 @@ if __name__ == '__main__':
     ## Uniquify all_ids, and then take the nested file_counts
     ## dictionary, collapse, and write to file.
     all_ids = set(all_ids)
-    table_dict = collapsed_nested_count_dict(file_counts, all_ids)
+    table_dict = collapsed_nested_count_dict(file_counts, all_ids, order=files)
     counts_to_file(table_dict, options.out_file, delimiter=options.delimiter)
         
         
