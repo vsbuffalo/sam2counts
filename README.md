@@ -4,8 +4,8 @@ sam2counts.py - Convert SAM mapping results to reference sequence counts
 Requirements
 ------------
  - Python 2.6.5 or greater
- - Cython (download from http://cython.org/)
- - Pysam (download from http://code.google.com/p/pysam/)
+ - Cython (download from <http://cython.org/>)
+ - Pysam (download from <http://code.google.com/p/pysam/>)
 
 Usage
 -----
@@ -30,6 +30,8 @@ Currently there is code to indicate if mapped reads map with 0 quality
 (i.e. map to multiple locations). The best output for this is still
 being decided, and this is not entirey implemented
 
+Furthermore, this code was tested fairly heavily, but I make no
+guarantees.
 
 License and Contact
 ----------------
