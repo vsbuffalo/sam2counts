@@ -19,11 +19,11 @@ from optparse import OptionParser
 
 def SAM_file_to_counts(filename):
     """
-    Take a filename to a SAM file, and create a hash of mapped and
-    unmapped reads; values are the counts of occurences.
+    Take SAM filename, and create a hash of mapped and unmapped reads;
+    keys are reference sequences, values are the counts of occurences.
 
-    Also, a hash of qualities (either 0 or otherwise) of mapped reads
-    is output.
+    Also, a hash of qualities (either 0 or >0) of mapped reads
+    is output, which is handy for diagnostics.
     """
     counts = dict()
     qual_counts = dict()
@@ -33,7 +33,7 @@ def SAM_file_to_counts(filename):
 
         ## quality recording
         if not qual_counts.get(id_name, False):
-            # create empty list for hash
+            # create empty  hash
             qual_counts[id_name] = {'0':0, '>0':0}
 
         ## initiate entry; even if not mapped, record 0 count
@@ -51,10 +51,10 @@ def SAM_file_to_counts(filename):
 
 def collapsed_nested_count_dict(counts_dict, all_ids, order=None):
     """
-    This function takes a nested dictionary `counts_dict` and
-    `all_ids`, which is built with the `table_dict`. All files (first
-    keys) in `counts_dict` are made into columns with order specified
-    by `order`.
+    Takes a nested dictionary `counts_dict` and `all_ids`, which is
+    built with the `table_dict`. All files (first keys) in
+    `counts_dict` are made into columns with order specified by
+    `order`.
 
     Output is a dictionary with keys that are the id's (genes or
     transcripts), with values that are ordered counts. A header will
@@ -87,8 +87,8 @@ def counts_to_file(table_dict, outfilename, delimiter=','):
     writer = csv.writer(open(outfilename, 'w'), delimiter=delimiter)
     table = table_dict['table']
     header = table_dict['header']
-    header_row = True
     
+    header_row = True
     for id_name, fields in table.items():
         if header_row:
             row = ['id'] + header
@@ -108,9 +108,10 @@ if __name__ == '__main__':
     parser.add_option("-o", "--out-file", dest="out_file",
                       help="the output file's name (default: counts.txt)",
                       default='counts.txt')
-    parser.add_option("-q", "--include-quality", dest="quality",
-                      help="generate quality statistics too (default: False)",
-                      default=False)
+    ## Output not yet implemented
+    # parser.add_option("-q", "--include-quality", dest="quality",
+    #                   help="generate quality statistics too (default: False)",
+    #                   default=False)
     parser.add_option("-v", "--verbose", dest="verbose",
                       help="enable verbose output")
 
@@ -126,6 +127,7 @@ if __name__ == '__main__':
 
     if len(set(files)) != len(set(args)):
         parser.error("file args must have unique base names (i.e. no foo/bar joo/bar)")
+        
     for full_filename in args:
         filename = path.basename(full_filename)
         ## read in SAM file, extract counts, and unpack counts and qual_counts
@@ -142,8 +144,3 @@ if __name__ == '__main__':
     all_ids = set(all_ids)
     table_dict = collapsed_nested_count_dict(file_counts, all_ids, order=files)
     counts_to_file(table_dict, options.out_file, delimiter=options.delimiter)
-        
-        
-    
-    
-    
