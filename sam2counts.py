@@ -19,7 +19,7 @@ except ImportError:
 
 from optparse import OptionParser
 
-def SAM_file_to_counts(filename, bam=False, extra=False, use_all_references=True):
+def SAM_file_to_counts(filename, bam=False, extra=False, use_all_references=True, min_mapq=None):
     """
     Take SAM filename, and create a hash of mapped and unmapped reads;
     keys are reference sequences, values are the counts of occurences.
@@ -45,6 +45,8 @@ def SAM_file_to_counts(filename, bam=False, extra=False, use_all_references=True
 
     for read in sf:
         if not read.is_unmapped:
+            if min_mapq is not None and read.mapq < min_mapq:
+                continue
             id_name = sf.getrname(read.rname) if read.rname != -1 else 0
 
             if not use_all_references and not counts.get(id_name, False):
@@ -125,6 +127,8 @@ if __name__ == '__main__':
     parser = OptionParser()
     parser.add_option("-d", "--delimiter", dest="delimiter",
                       help="the delimiter (default: tab)", default='\t')
+    parser.add_option("-m", "--min-mapq",
+                      help="minimum mapping quality (default: none)", default=None)
     parser.add_option("-o", "--out-file", dest="out_file",
                       help="output filename (default: counts.txt)",
                       default='counts.txt', action="store", type="string")
@@ -167,7 +171,7 @@ if __name__ == '__main__':
         filename = path.basename(full_filename)
         ## read in SAM file, extract counts, and unpack counts
         tmp = SAM_file_to_counts(full_filename, bam=options.bam, extra=options.extra_out,
-                                 use_all_references=options.use_all_references)
+                                 use_all_references=options.use_all_references, options.min_mapq)
 
         if options.extra_out:
             counts, unique, nonunique = tmp['counts'], tmp['unique'], tmp['nonunique']
