@@ -171,7 +171,7 @@ if __name__ == '__main__':
         filename = path.basename(full_filename)
         ## read in SAM file, extract counts, and unpack counts
         tmp = SAM_file_to_counts(full_filename, bam=options.bam, extra=options.extra_out,
-                                 use_all_references=options.use_all_references, options.min_mapq)
+                                 use_all_references=options.use_all_references, min_mapq=options.min_mapq)
 
         if options.extra_out:
             counts, unique, nonunique = tmp['counts'], tmp['unique'], tmp['nonunique']
