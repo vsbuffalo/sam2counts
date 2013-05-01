@@ -127,7 +127,7 @@ if __name__ == '__main__':
     parser = OptionParser()
     parser.add_option("-d", "--delimiter", dest="delimiter",
                       help="the delimiter (default: tab)", default='\t')
-    parser.add_option("-m", "--min-mapq",
+    parser.add_option("-m", "--min-mapq", type=int,
                       help="minimum mapping quality (default: none)", default=None)
     parser.add_option("-o", "--out-file", dest="out_file",
                       help="output filename (default: counts.txt)",
