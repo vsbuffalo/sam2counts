@@ -19,6 +19,11 @@ except ImportError:
 
 from optparse import OptionParser
 
+# csv module stupidly uses \r\n by default; this is just a Unix
+# variant of the "Excel" dialect.
+UnixVariant = csv.excel
+UnixVariant.lineterminator = "\n"
+
 def SAM_file_to_counts(filename, bam=False, extra=False, use_all_references=True, min_mapq=None):
     """
     Take SAM filename, and create a hash of mapped and unmapped reads;
@@ -106,7 +111,7 @@ def counts_to_file(table_dict, outfilename, delimiter=','):
     contains a table and header), to `outfilename` with the specified
     `delimiter`.
     """
-    writer = csv.writer(open(outfilename, 'w'), delimiter=delimiter)
+    writer = csv.writer(open(outfilename, 'w'), delimiter=delimiter, dialect=UnixVariant)
     table = table_dict['table']
     header = table_dict['header']
     
